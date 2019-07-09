@@ -52,10 +52,10 @@ public class WiFiDirectBroadcastReceiver extends BroadcastReceiver {
                     public void onPeersAvailable(WifiP2pDeviceList wifiP2pDeviceList) {
                         Collection<WifiP2pDevice> deviceList = wifiP2pDeviceList.getDeviceList();
                         Log.i(TAG, "deviceList: " + deviceList.size());
-                        List<DeviceBean> list =new ArrayList<>();
+                        List<WifiP2pDevice> list =new ArrayList<>();
                         for (WifiP2pDevice wifiP2pDevice : deviceList) {
                             Log.i(TAG, "deviceAddress: " + wifiP2pDevice.deviceAddress + "--name--" + wifiP2pDevice.deviceName);
-                            list.add(new DeviceBean(wifiP2pDevice.deviceName,wifiP2pDevice.deviceAddress));
+                            list.add(wifiP2pDevice);
                         }
                         activity.refreshList(list);
                     }
