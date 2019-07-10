@@ -2,6 +2,7 @@ package com.example.wifidirectdemo;
 
 import android.content.Context;
 import android.content.IntentFilter;
+import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
@@ -18,6 +19,7 @@ import android.widget.Toast;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.example.wifidirectdemo.adapter.WifiPeerRvAdapter;
 import com.example.wifidirectdemo.broadcast.WiFiDirectBroadcastReceiver;
+import com.example.wifidirectdemo.utils.WifiUtil;
 
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private IntentFilter mIntentFilter;
     private RecyclerView mRvDevices;
     private WifiPeerRvAdapter mAdapter;
+    private UdpServer server;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +53,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
                 connectDevice(mAdapter.getData().get(position));
+            }
+        });
+        mAdapter.setOnItemLongClickListener(new BaseQuickAdapter.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(BaseQuickAdapter adapter, View view, int position) {
+                disconnect();
+                return false;
             }
         });
     }
@@ -84,6 +94,11 @@ public class MainActivity extends AppCompatActivity {
      * @param view
      */
     public void startScan(View view) {
+        //wifi没开要先开启wifi
+        WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (!wifiManager.isWifiEnabled()) {
+            wifiManager.setWifiEnabled(true);
+        }
         mManager.discoverPeers(mChannel, listener);
     }
 
@@ -105,8 +120,45 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    public void startServer(View view) {
+        initServer();
+    }
+
+    public void sendData(View view) {
+        UdpClient.sendData("192.168.49.1", "data-----------------------");
+    }
+
+    /**
+     * 开启UDP SERVER
+     */
+    private void initServer() {
+        server = new UdpServer(UdpServer.UDP_PORT, new UdpServer.UdpListener() {
+            @Override
+            public void onData(String data) {
+                try {
+                    Log.i(TAG, "UdpServer recv data：" + data);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        server.start();
+        Log.i(TAG, "initServer: IP===" + WifiUtil.getIPAddress(this));
+    }
+
     public void disconnect() {
-        mManager.removeGroup(mChannel, listener);
+        mManager.removeGroup(mChannel, new WifiP2pManager.ActionListener() {
+            @Override
+            public void onSuccess() {
+                showToast("断开连接成功");
+            }
+
+            @Override
+            public void onFailure(int i) {
+                showToast("断开连接失败"+i);
+            }
+        });
     }
 
     WifiP2pManager.ActionListener listener = new WifiP2pManager.ActionListener() {
